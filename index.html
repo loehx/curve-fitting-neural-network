@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Neural Network Function Learning</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+      }
+      canvas {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <script>
+      // Simple neural network implementation
+      class NeuralNetwork {
+        constructor(inputSize, hiddenSizes, outputSize) {
+          this.layers = [];
+
+          // Input to first hidden layer
+          this.layers.push({
+            weights: new Array(hiddenSizes[0])
+              .fill()
+              .map(() =>
+                new Array(inputSize).fill().map(() => Math.random() * 2 - 1)
+              ),
+            biases: new Array(hiddenSizes[0])
+              .fill()
+              .map(() => Math.random() * 2 - 1),
+          });
+
+          // Hidden layers
+          for (let i = 1; i < hiddenSizes.length; i++) {
+            this.layers.push({
+              weights: new Array(hiddenSizes[i])
+                .fill()
+                .map(() =>
+                  new Array(hiddenSizes[i - 1])
+                    .fill()
+                    .map(() => Math.random() * 2 - 1)
+                ),
+              biases: new Array(hiddenSizes[i])
+                .fill()
+                .map(() => Math.random() * 2 - 1),
+            });
+          }
+
+          // Output layer
+          this.layers.push({
+            weights: new Array(outputSize)
+              .fill()
+              .map(() =>
+                new Array(hiddenSizes[hiddenSizes.length - 1])
+                  .fill()
+                  .map(() => Math.random() * 2 - 1)
+              ),
+            biases: new Array(outputSize)
+              .fill()
+              .map(() => Math.random() * 2 - 1),
+          });
+        }
+
+        sigmoid(x) {
+          return 1 / (1 + Math.exp(-x));
+        }
+
+        forward(input) {
+          let current = Array.isArray(input) ? input : [input];
+          for (const layer of this.layers) {
+            const next = [];
+            for (let i = 0; i < layer.weights.length; i++) {
+              let sum = layer.biases[i];
+              for (let j = 0; j < layer.weights[i].length; j++) {
+                sum += layer.weights[i][j] * current[j];
+              }
+              next.push(this.sigmoid(sum));
+            }
+            current = next;
+          }
+          // Scale the output from [0,1] to [-10,10]
+          return current.map((x) => x * 20 - 10);
+        }
+
+        train(input, target, learningRate = 0.1) {
+          input = Array.isArray(input) ? input : [input];
+          // Scale target from [-10,10] to [0,1] for training
+          target = Array.isArray(target)
+            ? target.map((t) => (t + 10) / 20)
+            : [(target + 10) / 20];
+
+          // Forward pass
+          const activations = [input];
+          let current = input;
+
+          for (const layer of this.layers) {
+            const next = [];
+            for (let i = 0; i < layer.weights.length; i++) {
+              let sum = layer.biases[i];
+              for (let j = 0; j < layer.weights[i].length; j++) {
+                sum += layer.weights[i][j] * current[j];
+              }
+              next.push(this.sigmoid(sum));
+            }
+            activations.push(next);
+            current = next;
+          }
+
+          // Backward pass
+          const deltas = [];
+          for (let i = this.layers.length - 1; i >= 0; i--) {
+            const layer = this.layers[i];
+            const layerOutput = activations[i + 1];
+
+            if (i === this.layers.length - 1) {
+              // Output layer
+              const delta = layerOutput.map((output, j) => {
+                const error = output - target[j];
+                return error * output * (1 - output);
+              });
+              deltas.unshift(delta);
+            } else {
+              // Hidden layers
+              const nextLayer = this.layers[i + 1];
+              const nextDelta = deltas[0];
+              const delta = [];
+
+              for (let j = 0; j < layer.weights.length; j++) {
+                let error = 0;
+                for (let k = 0; k < nextLayer.weights.length; k++) {
+                  error += nextDelta[k] * nextLayer.weights[k][j];
+                }
+                delta.push(error * layerOutput[j] * (1 - layerOutput[j]));
+              }
+              deltas.unshift(delta);
+            }
+          }
+
+          // Update weights and biases
+          for (let i = 0; i < this.layers.length; i++) {
+            const layer = this.layers[i];
+            const layerInput = activations[i];
+            const delta = deltas[i];
+
+            for (let j = 0; j < layer.weights.length; j++) {
+              for (let k = 0; k < layer.weights[j].length; k++) {
+                layer.weights[j][k] -= learningRate * delta[j] * layerInput[k];
+              }
+              layer.biases[j] -= learningRate * delta[j];
+            }
+          }
+        }
+      }
+
+      // Initialize neural network with 1 input (x) and 1 output (y)
+      const network = new NeuralNetwork(1, [64, 32, 16, 8], 1); // Large network with 3 hidden layers
+      const trainingPoints = [];
+
+      // Setup the scene, camera, and renderer
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(
+        75,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000
+      );
+      const renderer = new THREE.WebGLRenderer();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.body.appendChild(renderer.domElement);
+
+      // Handle window resizing
+      window.addEventListener("resize", onWindowResize, false);
+      function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      }
+
+      // Create materials
+      const dotGeometry = new THREE.SphereGeometry(0.1);
+      const dotMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+      const predictionMaterial = new THREE.MeshBasicMaterial({
+        color: 0x00ff00,
+      });
+      const lineMaterial = new THREE.LineBasicMaterial({ color: 0xff0000 });
+      const predictionLineMaterial = new THREE.LineBasicMaterial({
+        color: 0x00ff00,
+      });
+
+      // Initialize line geometries
+      let lineGeometry = new THREE.BufferGeometry();
+      let predictionLineGeometry = new THREE.BufferGeometry();
+      const line = new THREE.Line(lineGeometry, lineMaterial);
+      const predictionLine = new THREE.Line(
+        predictionLineGeometry,
+        predictionLineMaterial
+      );
+      // Enable retina display support
+      renderer.setPixelRatio(window.devicePixelRatio);
+      scene.add(line);
+      scene.add(predictionLine);
+
+      // Add click handler
+      window.addEventListener("click", (event) => {
+        // Calculate mouse position in normalized device coordinates
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+        // Update the picking ray with the camera and mouse position
+        raycaster.setFromCamera(mouse, camera);
+
+        // Calculate the point on z=0 plane
+        const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+        const intersectPoint = new THREE.Vector3();
+        raycaster.ray.intersectPlane(plane, intersectPoint);
+
+        console.log("New point clicked:", {
+          x: intersectPoint.x,
+          y: intersectPoint.y,
+        });
+
+        // Create a new dot at the intersection point
+        const dot = new THREE.Mesh(dotGeometry, dotMaterial);
+        dot.position.copy(intersectPoint);
+        scene.add(dot);
+
+        // Add point to training data (x as input, y as output)
+        trainingPoints.push({
+          input: intersectPoint.x,
+          output: intersectPoint.y,
+        });
+
+        // Sort points by x coordinate
+        trainingPoints.sort((a, b) => a.input - b.input);
+
+        console.log("Total training points:", trainingPoints.length);
+        // Update the line connecting the points
+        const points = [];
+        for (let i = 0; i < trainingPoints.length; i++) {
+          const current = trainingPoints[i];
+          const currentPoint = new THREE.Vector3(
+            current.input,
+            current.output,
+            0
+          );
+
+          // Add current point
+          points.push(currentPoint);
+
+          // Add connection to next point only
+          if (i < trainingPoints.length - 1) {
+            points.push(
+              new THREE.Vector3(
+                trainingPoints[i + 1].input,
+                trainingPoints[i + 1].output,
+                0
+              )
+            );
+          }
+        }
+
+        lineGeometry.dispose();
+        lineGeometry = new THREE.BufferGeometry().setFromPoints(points);
+        line.geometry = lineGeometry;
+
+        // Visualize network predictions
+        updatePredictionVisualization();
+      });
+
+      function trainNetwork() {
+        // Train network on all points
+        let totalError = 0;
+        for (let i = 0; i < 100; i++) {
+          // Train multiple times per point
+          trainingPoints.forEach((point) => {
+            // Get prediction before training
+            const prediction = network.forward(point.input)[0];
+            const error = Math.abs(prediction - point.output);
+            totalError += error;
+
+            network.train(point.input, point.output, 0.3);
+          });
+        }
+
+        console.log(
+          "Average error after training:",
+          totalError / (100 * trainingPoints.length)
+        );
+        // Visualize network predictions
+        setTimeout(updatePredictionVisualization, 500);
+      }
+
+      // Function to visualize network predictions
+      function updatePredictionVisualization() {
+        // Remove old prediction dots
+        scene.children = scene.children.filter(
+          (child) =>
+            child.material !== predictionMaterial || child === predictionLine
+        );
+
+        // Generate prediction points for a smooth curve
+        const predictionPoints = [];
+        for (let x = -7; x <= 7; x += 0.1) {
+          // Generate more points by interpolating between steps
+          for (let i = 0; i < 10; i++) {
+            const interpolatedX = x + (i * 0.1) / 10;
+            const y = network.forward(interpolatedX)[0];
+            predictionPoints.push(new THREE.Vector3(interpolatedX, y, 0));
+          }
+        }
+
+        // Update prediction line
+        if (predictionPoints.length > 0) {
+          predictionLineGeometry.dispose();
+          predictionLineGeometry = new THREE.BufferGeometry().setFromPoints(
+            predictionPoints
+          );
+          predictionLine.geometry = predictionLineGeometry;
+        }
+
+        console.log(
+          "Generated prediction curve with",
+          predictionPoints.length,
+          "points"
+        );
+      }
+
+      // Setup raycaster for mouse interaction
+      const raycaster = new THREE.Raycaster();
+      const mouse = new THREE.Vector2();
+
+      // Position camera
+      camera.position.z = 10;
+
+      // Animation loop
+      function animate() {
+        requestAnimationFrame(animate);
+        renderer.render(scene, camera);
+      }
+      animate();
+
+      setInterval(trainNetwork, 50);
+    </script>
+  </body>
+</html>
