@@ -187,7 +187,9 @@
       const predictionMaterial = new THREE.MeshBasicMaterial({
         color: 0x00ff00,
       });
-      const lineMaterial = new THREE.LineBasicMaterial({ color: 0xff0000 });
+      const lineMaterial = new THREE.LineBasicMaterial({
+        color: 0xff0000,
+      });
       const predictionLineMaterial = new THREE.LineBasicMaterial({
         color: 0x00ff00,
       });
@@ -349,7 +351,7 @@
     <style>
       h1 {
         position: absolute;
-        top: 20px;
+        top: 5%;
         left: 50%;
         transform: translateX(-50%);
         font-family: "Helvetica Neue", Arial, sans-serif;
@@ -361,6 +363,8 @@
         background: rgba(0, 0, 0, 0.2);
         border-radius: 5px;
         z-index: 100;
+        width: 100%;
+        text-align: center;
       }
     </style>
     <p class="copyright">
@@ -371,12 +375,15 @@
       .copyright {
         position: absolute;
         bottom: 10px;
-        left: 10px;
+        left: 50%;
+        transform: translateX(-50%);
         font-family: "Helvetica Neue", Arial, sans-serif;
         font-size: 12px;
-        color: rgba(255, 255, 255, 0.6);
+        color: rgba(255, 255, 255, 0.4);
         text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
         transition: all 0.3s ease;
+        text-align: center;
+        width: 100%;
       }
 
       .copyright:hover {
@@ -395,13 +402,14 @@
         border-bottom-color: rgba(255, 255, 255, 0.9);
       }
     </style>
-    <div class="error-rate"></div>
+    <div class="error-rate">Error: 0.00000</div>
     <style>
       .error-rate {
         color: white;
         position: absolute;
-        bottom: 10px;
-        right: 10px;
+        bottom: 10%;
+        left: 50%;
+        transform: translateX(-50%);
         font-family: "Helvetica Neue", Arial, sans-serif;
         font-size: 12px;
         color: rgba(255, 255, 255, 0.6);
