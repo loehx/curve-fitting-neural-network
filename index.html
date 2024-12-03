@@ -3,7 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Neural Network Function Learning</title>
+    <meta name="author" content="Alexander Löhn" />
+    <title>Curve Fitting Neural Network</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
     <style>
       body {
@@ -304,11 +305,14 @@
 
         // Generate prediction points for a smooth curve
         const predictionPoints = [];
-        for (let x = -7; x <= 7; x += 0.1) {
+        for (let x = -10; x <= 10; x += 0.1) {
           // Generate more points by interpolating between steps
           for (let i = 0; i < 10; i++) {
             const interpolatedX = x + (i * 0.1) / 10;
-            const y = network.forward(interpolatedX)[0];
+            const y =
+              trainingPoints.length === 0
+                ? 0
+                : network.forward(interpolatedX)[0];
             predictionPoints.push(new THREE.Vector3(interpolatedX, y, 0));
           }
         }
@@ -343,7 +347,59 @@
       }
       animate();
 
+      // Initial prediction visualization
+      updatePredictionVisualization();
       setInterval(trainNetwork, 50);
     </script>
+    <h1>Curve Fitting Neural Network</h1>
+    <style>
+      h1 {
+        position: absolute;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-family: "Helvetica Neue", Arial, sans-serif;
+        font-size: 24px;
+        color: rgba(255, 255, 255, 0.8);
+        text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.4);
+        margin: 0;
+        padding: 10px 20px;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 5px;
+        z-index: 100;
+      }
+    </style>
+    <p class="copyright">
+      by Alexander L&ouml;hn - 2024 -
+      <a href="https://loehx.com/">loehx.com</a>
+    </p>
+    <style>
+      .copyright {
+        position: absolute;
+        bottom: 10px;
+        left: 10px;
+        font-family: "Helvetica Neue", Arial, sans-serif;
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.6);
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        transition: all 0.3s ease;
+      }
+
+      .copyright:hover {
+        color: rgba(255, 255, 255, 0.9);
+        text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.5);
+        transform: scale(1.02);
+      }
+
+      .copyright a {
+        color: inherit;
+        text-decoration: none;
+        border-bottom: 1px dotted rgba(255, 255, 255, 0.4);
+      }
+
+      .copyright a:hover {
+        border-bottom-color: rgba(255, 255, 255, 0.9);
+      }
+    </style>
   </body>
 </html>
