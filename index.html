@@ -208,8 +208,14 @@
       scene.add(line);
       scene.add(predictionLine);
 
-      // Add click handler
-      window.addEventListener("click", (event) => {
+      // Add click/touch handler
+      window.addEventListener("click", handleInteraction);
+      window.addEventListener("touchstart", (e) => {
+        e.preventDefault(); // Prevent default touch behavior
+        handleInteraction(e.touches[0]);
+      });
+
+      function handleInteraction(event) {
         // Calculate mouse position in normalized device coordinates
         mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
         mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
@@ -273,7 +279,7 @@
 
         // Visualize network predictions
         updatePredictionVisualization();
-      });
+      }
 
       function trainNetwork() {
         const errorEl = document.querySelector(".error-rate");
