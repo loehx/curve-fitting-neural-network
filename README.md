@@ -7,6 +7,10 @@ A visualization of a neural network learning to fit mathematical functions using
 
 This application uses a feedforward neural network to approximate mathematical functions, with real-time visualization using Three.js to show the learning process.
 
+## Live Demo
+
+Visit [loehx.github.io/curve-fitting-neural-network](https://loehx.github.io/curve-fitting-neural-network/) to see it in action.
+
 ## Features
 
 - Interactive 3D visualization 
